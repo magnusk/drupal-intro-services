@@ -1,0 +1,293 @@
+<?php
+
+/**
+ * @file
+ * API consumer for the Services demo.
+ *
+ * @author
+ * Magnus Kempe <magnus@ethnohub.com>
+ */
+
+define('API_PROVIDER_URL', 'http://provider.localhost/');
+
+define('CONSUME_API_ENDPOINT', 'api');
+
+define('CONSUME_API_USER', 'provider_api_user'); // special user for API provider
+define('CONSUME_API_PASS', 'to serve mankind');
+
+define('CONSUME_API_ADMIN_MENU', 'admin/config/services/consume_api');
+
+/**
+ * Implements hook_menu().
+ */
+function consume_api_menu() {
+$items = array();
+
+  $items[CONSUME_API_ADMIN_MENU] = array(
+    'title' => 'Consume API',
+    'description' => 'Consume API.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('consume_api_reading_form'),
+    'access arguments' => array('administer content'),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  $items[CONSUME_API_ADMIN_MENU . '/read'] = array(
+    'title' => 'Read via API',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+
+  $items[CONSUME_API_ADMIN_MENU . '/write'] = array(
+    'title' => 'Write via API',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('consume_api_writing_form'),
+    'access arguments' => array('administer content'),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  return $items;
+}
+
+/**
+ * Callback for admin/config/services/consume_api/read
+ *
+ * Defines a test-API reading form using FAPI.
+ */
+function consume_api_reading_form($form, &$form_state) {
+$form = array();
+
+  $form['service'] = array(
+    '#type' => 'item',
+    '#title' => t('API Service Endpoint'),
+    '#markup' => check_plain(API_PROVIDER_URL . CONSUME_API_ENDPOINT),
+  );
+
+  $form['username'] = array(
+    '#type' => 'item',
+    '#title' => t('API Provider Username'),
+    '#markup' => check_plain(CONSUME_API_USER),
+  );
+
+  $form['nid'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Node ID'),
+    '#size' => 4,
+    '#default_value' => 2,
+    '#required' => TRUE,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Get node via API'),
+  );
+
+  $form['#submit'][] = 'consume_api_reading_submit';
+
+  return $form;
+}
+
+/**
+ * Process form submission.
+ *
+ * @see consume_api_reading_form()
+ */
+function consume_api_reading_submit($form, &$form_state) {
+  $response = _consume_api_signin();
+
+  if ( $response->code != 200 ) {
+    $output['response'] = array(
+      '#type' => 'item',
+      '#title' => t('Failed to sign in to API (have you enabled the user.login resource?)'),
+      '#markup' => check_plain($response->error),
+    );
+    drupal_set_message(drupal_render($output), 'error');
+    return;
+  }
+
+  $data = json_decode($response->data);
+  $session_cookie = $data->session_name . '=' . $data->sessid;
+
+  $nid = $form_state['values']['nid'];
+
+  $response = _consume_api_retrieve('node', $nid, $session_cookie);
+
+  $decoded_data = json_decode($response->data);
+
+  if (empty($decoded_data)) {
+    drupal_set_message(t('No data in API response for node @nid.', array(
+      '@nid' => $nid,
+    )), 'warning');
+    return;
+  }
+
+  $output['decoded_data'] = array(
+    '#type' => 'item',
+    '#title' => t('API response for node @nid:', array(
+      '@nid' => $nid,
+    )),
+    '#markup' => '<pre>' . check_plain(print_r($decoded_data, TRUE)) . '</pre>',
+  );
+  drupal_set_message(drupal_render($output));
+}
+
+/**
+ * Logins to the API.
+ *
+ * We use the session cookie returned by user/login.
+ */
+function _consume_api_signin() {
+  $post_data = array(
+    'username' => CONSUME_API_USER,
+    'password' => CONSUME_API_PASS,
+  );
+  // Format post data as application/x-www-form-urlencoded.
+  $post_data = http_build_query($post_data, '', '&');
+
+  $headers = array(
+    'Content-Type' => 'application/x-www-form-urlencoded',
+    'Accept' => 'application/json',
+  );
+  $options = array(
+    'headers' => $headers,
+    'method' => 'POST',
+    'data' => $post_data,
+  );
+
+  $service_url = API_PROVIDER_URL . CONSUME_API_ENDPOINT . '/user/login';
+  $response = drupal_http_request($service_url, $options);
+
+  return $response;
+}
+
+/**
+ * Retrieves a resource from the API.
+ */
+function _consume_api_retrieve($resource, $id, $session_cookie) {
+  $headers = array(
+    'Cookie' => $session_cookie,
+    'Accept' => 'application/json',
+  );
+  $options = array(
+    'headers' => $headers,
+    'method' => 'GET',
+  );
+
+  $service_url = API_PROVIDER_URL . CONSUME_API_ENDPOINT . '/' . $resource . '/' . $id;
+  $response = drupal_http_request($service_url, $options);
+
+  return $response;
+}
+
+/**
+ * Callback for admin/config/services/consume_api/write
+ *
+ * Defines a test-API writing form using FAPI.
+ */
+function consume_api_writing_form($form, &$form_state) {
+$form = array();
+
+  $form['service'] = array(
+    '#type' => 'item',
+    '#title' => t('API Service Endpoint'),
+    '#markup' => check_plain(API_PROVIDER_URL . CONSUME_API_ENDPOINT),
+  );
+
+  $form['username'] = array(
+    '#type' => 'item',
+    '#title' => t('API Provider Username'),
+    '#markup' => check_plain(CONSUME_API_USER),
+  );
+
+  $form['title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Title'),
+    '#required' => TRUE,
+  );
+
+  $form['body'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Body'),
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Create node via API'),
+  );
+
+  $form['#submit'][] = 'consume_api_writing_submit';
+
+  return $form;
+}
+
+/**
+ * Process form submission.
+ *
+ * @see consume_api_writing_form()
+ */
+function consume_api_writing_submit($form, &$form_state) {
+  $response = _consume_api_signin();
+
+  if ( $response->code != 200 ) {
+    $output['response'] = array(
+      '#type' => 'item',
+      '#title' => t('Failed to sign in to API'),
+      '#markup' => check_plain($response->error),
+    );
+    drupal_set_message(drupal_render($output), 'error');
+    return;
+  }
+
+  $data = json_decode($response->data);
+  $session_cookie = $data->session_name . '=' . $data->sessid;
+
+  $title = $form_state['values']['title'];
+  $body = $form_state['values']['body'];
+
+  $node_data = array(
+    'title' => $title,
+    'type' => 'article',
+    'body[und][0][value]' => $body,
+    'language' => 'und',
+  );
+
+  $response = _consume_api_create('node', $node_data, $session_cookie);
+
+  $decoded_data = json_decode($response->data);
+
+  if (empty($decoded_data)) {
+    drupal_set_message(t('No data in API response for node creation.'), 'warning');
+    return;
+  }
+
+  $output['decoded_data'] = array(
+    '#type' => 'item',
+    '#title' => t('API response for node creation:'),
+    '#markup' => '<pre>' . check_plain(print_r($decoded_data, TRUE)) . '</pre>',
+  );
+  drupal_set_message(drupal_render($output));
+}
+
+/**
+ * Creates a resource via the API.
+ */
+function _consume_api_create($resource, $data, $session_cookie) {
+  // Format post data as application/x-www-form-urlencoded.
+  $post_data = http_build_query($data, '', '&');
+
+  $headers = array(
+    'Cookie' => $session_cookie,
+    'Content-Type' => 'application/x-www-form-urlencoded',
+    'Accept' => 'application/json',
+  );
+
+  $options = array(
+    'headers' => $headers,
+    'method' => 'POST',
+    'data' => $post_data,
+  );
+
+  $service_url = API_PROVIDER_URL . CONSUME_API_ENDPOINT . '/' . $resource;
+  $response = drupal_http_request($service_url, $options);
+
+  return $response;
+}

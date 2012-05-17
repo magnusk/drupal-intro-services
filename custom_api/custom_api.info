@@ -1,0 +1,7 @@
+name = Custom API
+description = API to communicate between a client sites and our server.
+dependencies[] = services
+dependencies[] = rest_server
+core = 7.x
+
+version = "7.x-1.0"

@@ -1,0 +1,42 @@
+<?php
+/**
+ * Implements hook_permission().
+ */
+function custom_api_permission() {
+  return array(
+    'retrieve custom api resource' => array(
+      'title' => t('Retrieve Custom API resource'),
+      'description' => t('retrieve custom resource for a consumer'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_services_resources().
+ */
+function custom_api_services_resources() {
+  $resources = array();
+
+  $resources['custom'] = array(
+    'retrieve' => array(
+      'help' => 'Retrieves the custom resource.',
+      'file' => array('file' => 'inc', 'module' => 'custom_api'),
+      'callback' => '_custom_api_retrieve_resource',
+      'access callback' => '_custom_api_access',
+      'access arguments' => array('view'),
+      'access arguments append' => TRUE,
+      'args' => array(
+        array(
+          'name' => 'id',
+          'type' => 'int',
+          'description' => 'The id of the custom resource',
+          'source' => array('path' => '0'),
+          'optional' => FALSE,
+        ),
+      ),
+    ),
+  );
+
+  return $resources;
+}
+?>
