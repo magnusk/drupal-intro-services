@@ -99,7 +99,7 @@ We need to understand and share the specifics of our API.
 
 For this discussion, we use the URL http://consumer.example.com/ for the Web Service _consumer_ site. Replace below with your own consumer URL.
 
-Note: we'll be switching between the PROVIDER and CONSUMER sites, depending on whether we're configuring the API or executing code that consumes the API.
+Note: we'll be calling out switches in perspective between the PROVIDER and CONSUMER sites, depending on whether we're configuring the API or executing code that consumes the API.
 
 - Purpose of this section: consume the API we've created above.
 
@@ -117,7 +117,7 @@ Note: we'll be switching between the PROVIDER and CONSUMER sites, depending on w
 
     - alternative: OAuth
 
-        - not yet working with this version of Services (I tried and haven't figured it out!)
+        - not yet ready to use with this version of Services (or: I tried and haven't figured it out!)
 
 - PROVIDER SITE: prepare a user and its permissions
 
@@ -181,7 +181,7 @@ Note: we'll be switching between the PROVIDER and CONSUMER sites, depending on w
 
 - Services 3.x documentation: http://drupal.org/node/736522
 
-- discussion and working group for anyone interested in the module 'Services': (http://groups.drupal.org/services)
+- Discussion and working group for anyone interested in the module 'Services': http://groups.drupal.org/services
 
 - Drupal 8 Web Services and Context Core Initiative (WSCCI): http://groups.drupal.org/wscci
 
