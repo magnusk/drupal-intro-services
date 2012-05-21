@@ -26,10 +26,11 @@ For this discussion, we use the URL http://provider.example.com/ for the Web Ser
         - SPYC is a simple YAML loader/dumper class for PHP
             - http://code.google.com/p/spyc/
 
-    cd &lt;example_drupal_directory&gt;; cd sites/all/libraries
+<pre><code>    cd &lt;example_drupal_directory&gt;; cd sites/all/libraries
     wget 'http://spyc.googlecode.com/files/spyc-0.5.zip'
     unzip spyc-0.5.zip
     cp -p spyc-0.5/spyc.php ../modules/services/servers/rest_server/lib/
+</code></pre>
 
 - configure your first endpoint and the associated resources
 
